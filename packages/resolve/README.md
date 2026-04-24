@@ -21,3 +21,27 @@ with the default nodejs resolution algorithms.
 - Sensible TypeScript-first types
 - Shakeable ESM exports
 - Promise & synchronous implementations
+
+## Usage
+```ts
+import { resolve, resolveSync } from '@loaderkit/resolve/esm';
+import { resolve as resolveRequire, resolveSync as resolveRequireSync } from '@loaderkit/resolve/cjs';
+import { defaultAsyncFileSystem, defaultSyncFileSystem } from '@loaderkit/resolve/fs';
+
+// Async module resolution
+const resolution = await resolve(defaultAsyncFileSystem, 'react', new URL(import.meta.url));
+console.log(resolution.format, resolution.url);
+// format: "addon" | "builtin" | "commonjs" | "json" | "module" | "wasm"
+// url: typeof URL
+
+// Synchronous module resolution
+resolveSync(defaultSyncFileSystem, 'react', new URL(import.meta.url));
+
+// CommonJS module resolution
+await resolveRequire(defaultAsyncFileSystem, 'lodash', new URL(import.meta.url));
+resolveRequireSync(defaultSyncFileSystem, 'lodash', new URL(import.meta.url));
+```
+
+The `FileSystemAsync` and `FileSystemSync` interfaces can be implemented by client code as
+necessary. For example, you could write a delegate to load the module source files from a zip file,
+from the internet, or whatever you want.

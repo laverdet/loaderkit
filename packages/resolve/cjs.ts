@@ -8,7 +8,7 @@ import { nodeCoreModules } from "./node-modules.js";
 
 // https://nodejs.org/api/modules.html#all-together
 
-const defaultConditions = [ "node", "require" ];
+const defaultConditions = [ "node", "require", "module-sync" ];
 /** @internal */
 export const defaultExtensions = [ ".js", ".json", ".node" ];
 
@@ -306,7 +306,7 @@ function *nodeModulesPaths(path: URL) {
 		// a. if PARTS[I] = "node_modules", GOTO d.
 		if (!path.pathname.endsWith("/node_modules/")) {
 			// b. DIR = path join(PARTS[0 .. I] + "node_modules")
-			// c. DIRS = DIR + DIRS
+			// c. DIRS = DIRS + DIR
 			yield new URL("node_modules/", path);
 		}
 		// d. let I = I - 1
@@ -331,10 +331,10 @@ function *loadPackageImports(fs: FileSystemTask, fragment: string, parentURL: UR
 		return;
 	}
 
-	// 4. If `--experimental-require-module` is enabled
+	// 4. If `--no-require-module` is not enabled
 	//   a. let CONDITIONS = ["node", "require", "module-sync"]
 	//   b. Else, let CONDITIONS = ["node", "require"]
-	// nb: Omitted
+	// nb: Omitted. You would enable this with `context.conditions`.
 
 	// 5. let MATCH = PACKAGE_IMPORTS_RESOLVE(X, pathToFileURL(SCOPE), CONDITIONS) [defined in the ESM resolver]
 	const match = yield* packageImportsResolve(fs, fragment, packageURL, conditions);
@@ -357,7 +357,7 @@ function *loadPackageExports(fs: FileSystemTask, subpath: string, parentURL: URL
 		return;
 	}
 
-	// 5. If `--experimental-require-module` is enabled
+	// 5. If `--no-require-module` is not enabled
 	//  a. let CONDITIONS = ["node", "require", "module-sync"]
 	//  b. Else, let CONDITIONS = ["node", "require"]
 

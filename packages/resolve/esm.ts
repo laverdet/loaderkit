@@ -338,8 +338,8 @@ export function *packageExportsResolve(
 /** @internal */
 export function *packageImportsResolve(fs: FileSystemTask, specifier: string, parentURL: URL, conditions: readonly string[]): Task<URL> {
 	// 1. Assert: specifier begins with "#".
-	// 2. If specifier is exactly equal to "#" or starts with "#/", then
-	if (specifier === "#" || specifier.startsWith("#/")) {
+	// 2. If specifier is exactly equal to "#", then
+	if (specifier === "#") {
 		// 1. Throw an Invalid Module Specifier error.
 		throw new Error("Invalid Module Specifier");
 	}
@@ -634,7 +634,7 @@ export function *esmFileFormat(fs: FileSystemTask, url: URL): Task<ModuleFormat 
 		return "json";
 	}
 
-	// 5. If --experimental-wasm-modules is enabled and url ends in ".wasm", then
+	// 5. If url ends in ".wasm", then
 	if (url.pathname.endsWith(".wasm")) {
 		// 1. Return "wasm".
 		return "wasm";
@@ -683,8 +683,8 @@ export function *esmFileFormat(fs: FileSystemTask, url: URL): Task<ModuleFormat 
 	// 12. If url does not have any extension, then
 	const segments = url.pathname.split("/");
 	if (!segments[segments.length - 1]!.includes(".")) {
-		// 1. If packageType is "module" and --experimental-wasm-modules is enabled and the file at url
-		//    contains the header for a WebAssembly module, then
+		// 1. If packageType is "module" and the file at url contains the "application/wasm" content
+		//    type header for a WebAssembly module, then
 		//   1. Return "wasm".
 		// nb: omitted
 
@@ -762,7 +762,7 @@ export function *readPackageJson(fs: FileSystemTask, packageURL: URL): Task<Reco
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function detectModuleSyntax(fs: FileSystemTask, source: string) {
+function detectModuleSyntax(source: string) {
 	// 1. Parse source as an ECMAScript module.
 	// 2. If the parse is successful, then
 	//   1. If source contains top-level `await`, static `import` or `export` statements, or
@@ -770,7 +770,7 @@ function detectModuleSyntax(fs: FileSystemTask, source: string) {
 	//   2. If source contains a top-level lexical declaration (`const`, `let`, or `class`) of any
 	//      of the CommonJS wrapper variables (`require`, `exports`,`module`, `__filename`, or
 	//      `__dirname`) then return true.
-	// 3. Else return false.
+	// 3. Return false.
 
 	// nb: Haha, yeah right
 	return false;

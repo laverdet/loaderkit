@@ -15,9 +15,9 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/braidnetworks/loaderkit.git"
+		"url": "git+https://github.com/laverdet/loaderkit.git"
 	},
 	"author": "https://github.com/laverdet/",
 	"license": "ISC",
-	"homepage": "https://github.com/braidnetworks/loaderkit/packages/resolve#readme"
+	"homepage": "https://github.com/laverdet/loaderkit/blob/main/packages/resolve/README.md"
 }

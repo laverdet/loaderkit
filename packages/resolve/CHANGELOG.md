@@ -1,5 +1,11 @@
 # @loaderkit/resolve
 
+## 1.0.5
+
+### Patch Changes
+
+- 624cabc: Allow '#' import
+
 ## 1.0.4
 
 ### Patch Changes

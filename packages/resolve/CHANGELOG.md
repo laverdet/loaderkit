@@ -1,5 +1,11 @@
 # @loaderkit/resolve
 
+## 1.0.6
+
+### Patch Changes
+
+- 83a37c1: fix symbolic links on windows (pnpm projects)
+
 ## 1.0.5
 
 ### Patch Changes

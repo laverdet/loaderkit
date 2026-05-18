@@ -1,6 +1,7 @@
 import type { Task } from "@braidai/lang/task/utility";
 import * as fsS from "node:fs";
 import * as fs from "node:fs/promises";
+import * as os from "node:os";
 
 /** @internal */
 export interface FileSystemTask {
@@ -26,6 +27,17 @@ export interface FileSystemSync {
 	readonly readLink: (path: URL) => string | undefined;
 }
 
+// From my limited testing on Windows, `fs.readlink` returns a full path to 'C:\whatever'. So
+// flipping the slashes and prefixing the fake root path is enough to get my sample pnpm project
+// working correctly.
+const normalizeWindowsLink = function(): (path: string) => string {
+	if (os.platform() === "win32") {
+		return path => `/${path.replaceAll("\\", "/")}`;
+	} else {
+		return path => path;
+	}
+}();
+
 export const defaultAsyncFileSystem: FileSystemAsync = {
 	directoryExists: async path => {
 		try {
@@ -49,7 +61,7 @@ export const defaultAsyncFileSystem: FileSystemAsync = {
 
 	readLink: async path => {
 		try {
-			return await fs.readlink(path);
+			return normalizeWindowsLink(await fs.readlink(path));
 		} catch {
 			return undefined;
 		}
@@ -79,7 +91,7 @@ export const defaultSyncFileSystem: FileSystemSync = {
 
 	readLink: path => {
 		try {
-			return fsS.readlinkSync(path);
+			return normalizeWindowsLink(fsS.readlinkSync(path));
 		} catch {
 			return undefined;
 		}

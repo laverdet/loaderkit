@@ -8,6 +8,29 @@
 
 This is a simple loader for well-configured TypeScript projects running in nodejs.
 
+The difference between this loader and the built-in TypeScript loader for nodejs and
+[tsx](https://www.npmjs.com/package/tsx) is that this loader is meant for projects which intend to
+eventually deploy as stripped JavaScript.
+
+nodejs doesn't include a TypeScript-aware resolver, so `import {} from "./module.js";` will not load
+if `module.js` is actually `module.ts`. This of course causes problems for your source when you
+eventually do output to JavaScript. nodejs also support [erasable
+syntax](https://www.typescriptlang.org/tsconfig/#erasableSyntaxOnly) which is fine, but if you have
+extended TypeScript syntax you need a different loader.
+
+`tsx` [doesn't respect `import.meta.url`](https://github.com/privatenumber/tsx/issues/448) which is
+a fine opinion to take. It also struggles with various TypeScript [directory configuration
+directives](https://github.com/privatenumber/tsx/issues/714). These factors make eventual
+distribution of JavaScript projects difficult to accomplish.
+
+An extra degree of care has been taken to ensure that `import.meta.url` is correct. My belief is
+that the behavior of your program should not be different between development and production
+versions. And I don't think that this should be controversial either. So, when an output destination
+is specified in the nearest `tsconfig.json` then `import.meta.url` will be the value it would have
+been if run from the `tsc`-transpiled output.
+
+---
+
 This loader does not perform any type checking. It only performs transpilation. A well-configured
 project should run `tsc -b -w` in a separate process.
 
@@ -16,12 +39,6 @@ should not be using CommonJS.
 
 Source maps are passed along in the transpilation process, so the `--enable-source-maps` nodejs flag
 is recommended.
-
-An extra degree of care has been taken to ensure that `import.meta.url` is correct. My belief is
-that the behavior of your program should not be different between development and production
-versions. And I don't think that this should be controversial either. So, when an output destination
-is specified in the nearest `tsconfig.json` then `import.meta.url` will be the value it would have
-been if run from the `tsc`-transpiled output.
 
 
 EXAMPLE

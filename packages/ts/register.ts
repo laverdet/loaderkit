@@ -1,5 +1,4 @@
-import { register } from "node:module";
+import { registerHooks } from "node:module";
+import { load, resolve } from "./loader.js";
 
-register("@loaderkit/ts/loader", {
-	parentURL: import.meta.url,
-});
+registerHooks({ load, resolve });

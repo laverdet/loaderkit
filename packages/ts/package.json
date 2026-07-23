@@ -9,6 +9,9 @@
 	"imports": {
 		"#ts/*": "./dist/*.js"
 	},
+	"engines": {
+		"node": ">=22.15.0"
+	},
 	"scripts": {
 		"clean": "rm -rf dist",
 		"prepare": "npm run -s clean; npx tsc -b",

@@ -2,7 +2,7 @@ import type { TranspileOptions } from "./scope.js";
 import type { BuildFailure } from "esbuild";
 import type { ModuleFormat } from "node:module";
 import { fileURLToPath } from "node:url";
-import { transform } from "esbuild";
+import { transformSync } from "esbuild";
 import { testAnyTypeScript } from "./translate.js";
 
 const nodeVersion = `node${process.versions.node}`;
@@ -12,16 +12,16 @@ function isBuildFailure(error: unknown): error is BuildFailure & Error {
 }
 
 /** @internal */
-export async function transpileSource(
+export function transpileSource(
 	sourceText: string,
 	format: ModuleFormat,
 	sourceLocation: URL,
 	compilerOptions: TranspileOptions,
-) {
+): string {
 	try {
 		// nb: CommonJS is not actually supported. You would need a whole new thing that
 		// shims `require`, `__filename`, etc.
-		const result = await transform(sourceText, {
+		const result = transformSync(sourceText, {
 			format: format === "module" ? "esm" : "cjs",
 			loader: function() {
 				const { pathname } = sourceLocation;

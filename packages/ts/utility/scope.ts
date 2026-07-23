@@ -1,4 +1,4 @@
-import type { FileSystemAsync } from "@loaderkit/resolve/fs";
+import type { FileSystemSync } from "@loaderkit/resolve/fs";
 import type { ModuleFormat } from "node:module";
 import JSON5 from "json5";
 import { testAnyJavaScript, testAnyTypeScript } from "./translate.js";
@@ -7,8 +7,8 @@ const testCommonJS = /\.c[jt]sx?$/i;
 const testModule = /\.m[jt]sx?$/i;
 
 /** @internal */
-export interface LoaderFileSystem extends FileSystemAsync {
-	readFileString: (path: URL) => Promise<string>;
+export interface LoaderFileSystem extends FileSystemSync {
+	readFileString: (path: URL) => string;
 }
 
 /**
@@ -75,28 +75,31 @@ function makeReadParseCachedForever<
 	Content,
 	Type extends object,
 >(
-	read: (file: URL) => Promise<Content>,
-	extract: (content: Content, configPath: URL) => Type | Promise<Type>,
+	read: (file: URL) => Content,
+	extract: (content: Content, configPath: URL) => Type,
 ) {
-	const cache = new Map<string, Promise<Type | null | undefined>>();
-	return (file: URL) => cache.get(file.href) ?? function() {
-		const promise = async function() {
-			const content = await async function() {
+	const cache = new Map<string, Type | null | undefined>();
+	return (file: URL) => {
+		if (cache.has(file.href)) {
+			return cache.get(file.href);
+		}
+		const result = function() {
+			const content = function() {
 				try {
-					return await read(file);
+					return read(file);
 				} catch {}
 			}();
 			if (content !== undefined) {
 				try {
-					return await extract(content, file);
+					return extract(content, file);
 				} catch {
 					return null;
 				}
 			}
 		}();
-		cache.set(file.href, promise);
-		return promise;
-	}();
+		cache.set(file.href, result);
+		return result;
+	};
 }
 
 // Iterable which walks up the filesystem hierarchy from the given path.
@@ -121,11 +124,11 @@ const replaceFragmentDirectorySlashes = (location: string) => replaceFragmentSla
  * `package.json` locator. Returns the location and content of the nearest `package.json` file.
  * @internal
  */
-export async function resolvePackage(fs: FileSystemAsync, fileOrDirectory: URL) {
+export function resolvePackage(fs: FileSystemSync, fileOrDirectory: URL) {
 	for (const directory of iterateDirectoryHierarchy(fileOrDirectory)) {
 		try {
 			const path = new URL("package.json", directory);
-			const content = await fs.readFileJSON(path) as PackageJson;
+			const content = fs.readFileJSON(path) as PackageJson;
 			return {
 				packageJson: content,
 				packagePath: path,
@@ -158,13 +161,13 @@ export function makeResolveTypeScriptPackage(fs: LoaderFileSystem) {
 	};
 	const read = makeReadParseCachedForever(
 		file => fs.readFileString(file),
-		async (content, configPath: URL) => {
+		(content, configPath: URL) => {
 			// Parse `tsconfig.json` and flatten `extends` configurations
 			const tsConfigJson: TypeScriptConfig = JSON5.parse(content);
 			let compilerOptions = tsConfigJson.compilerOptions ?? {};
 			if (tsConfigJson.extends !== undefined) {
 				const extendsConfigPath = new URL(replaceFragmentSlashes(tsConfigJson.extends), configPath);
-				const next = await read(extendsConfigPath);
+				const next = read(extendsConfigPath);
 				if (next != null) {
 					compilerOptions = {
 						...next.compilerOptions,
@@ -197,11 +200,11 @@ export function makeResolveTypeScriptPackage(fs: LoaderFileSystem) {
 			};
 			return { compilerOptions, locations };
 		});
-	return async (fileOrDirectory: URL, packagePath: URL | undefined) => {
+	return (fileOrDirectory: URL, packagePath: URL | undefined) => {
 		const stopAt = packagePath ? new URL(".", packagePath) : new URL("file:///");
 		const stopAtPath = stopAt.pathname;
 		for (const directory of iterateDirectoryHierarchy(fileOrDirectory)) {
-			const result = await read(new URL("tsconfig.json", directory));
+			const result = read(new URL("tsconfig.json", directory));
 			if (result === null) {
 				break;
 			} else if (result) {

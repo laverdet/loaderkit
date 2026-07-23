@@ -216,7 +216,7 @@ await test(".tsx directory import", async () => {
 	assert.strictEqual(result.url, "file:///component/index.jsx");
 });
 
-await test("dual package release from cjs vs mjs", async () => {
+await test("dual package release from cjs vs mjs", () => {
 	const { resolve } = makeTestLoader({
 		"node_modules/mod/package.json": JSON.stringify({
 			name: "mod",
@@ -230,11 +230,11 @@ await test("dual package release from cjs vs mjs", async () => {
 		"node_modules/mod/dist/main.mjs": "",
 		"node_modules/mod/dist/main.js": "",
 	});
-	const result1 = await resolve("mod", "file:///main.js");
+	const result1 = resolve("mod", "file:///main.js");
 	assert.strictEqual(result1.url, "file:///node_modules/mod/dist/main.js");
 	assert.strictEqual(result1.format, "commonjs");
 
-	const result2 = await resolve("mod", "file:///main.mjs");
+	const result2 = resolve("mod", "file:///main.mjs");
 	assert.strictEqual(result2.url, "file:///node_modules/mod/dist/main.mjs");
 	assert.strictEqual(result2.format, "module");
 });

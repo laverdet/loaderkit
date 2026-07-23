@@ -14,9 +14,13 @@ eventually deploy as stripped JavaScript.
 
 nodejs doesn't include a TypeScript-aware resolver, so `import {} from "./module.js";` will not load
 if `module.js` is actually `module.ts`. This of course causes problems for your source when you
-eventually do output to JavaScript. nodejs also support [erasable
+eventually do output to JavaScript. nodejs also only supports [erasable
 syntax](https://www.typescriptlang.org/tsconfig/#erasableSyntaxOnly) which is fine, but if you have
-extended TypeScript syntax you need a different loader.
+extended TypeScript syntax you need a different loader. This loader detects projects using
+[`erasableSyntaxOnly`](https://www.typescriptlang.org/tsconfig/#erasableSyntaxOnly) and will
+delegate to the built-in nodejs TypeScript loader for those files. For other files, esbuild is used.
+In either case the custom resolver is used which handles `.js` extensions and correct "dist" to
+"src" mapping.
 
 `tsx` [doesn't respect `import.meta.url`](https://github.com/privatenumber/tsx/issues/448) which is
 a fine opinion to take. It also struggles with various TypeScript [directory configuration

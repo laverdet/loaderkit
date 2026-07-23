@@ -96,6 +96,32 @@ await describe("transpilation options", async () => {
 	});
 });
 
+await test("erasableSyntaxOnly delegates to the runtime stripper", async () => {
+	const { evaluate, load, resolve } = makeTestLoader({
+		"package.json": JSON.stringify({ type: "module" }),
+		"tsconfig.json": JSON.stringify({
+			compilerOptions: {
+				erasableSyntaxOnly: true,
+			},
+		}),
+		"main.ts": [
+			"import type { Value } from './types.js';",
+			"const value: Value = { a: 1 };",
+			"globalThis.value = value.a;",
+		].join("\n"),
+		"types.ts": "export interface Value { a: number }",
+	});
+
+	// The loader should hand the raw TypeScript source to nodejs untouched.
+	const resolution = resolve("file:///main.ts", undefined);
+	const { format, source } = load(resolution);
+	assert.strictEqual(format, "module-typescript");
+	assert.match(source as string, /const value: Value/);
+
+	const result = await evaluate("main.ts");
+	assert.strictEqual(result.value, 1);
+});
+
 await test("allowJs enabled", async () => {
 	const { evaluate } = makeTestLoader({
 		"package.json": JSON.stringify({ type: "module" }),

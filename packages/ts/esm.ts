@@ -21,6 +21,27 @@ const commonJsRequireConditions = [ "node", "require" ];
 const isRequire = (conditions: readonly string[]) =>
 	conditions.includes("require") && !conditions.includes("import");
 
+const testStrippable = /\.[cm]?ts$/i;
+
+/**
+ * nodejs' type stripper preserves the position of every retained token by filling in stripped
+ *  characters with whitespace. This function generates a source map mapping the virtual `.js` file
+ *  location back to its `.ts` source.
+ */
+function makeStripSourceMap(source: string, sourceUrl: URL, generatedUrl: string): string {
+	const lineCount = source.split("\n").length;
+	const mappings = Array.from({ length: lineCount }, (_unused, index) => index === 0 ? "AAAA" : "AACA").join(";");
+	const map = {
+		version: 3,
+		file: generatedUrl,
+		sources: [ sourceUrl.href ],
+		sourcesContent: [ source ],
+		names: [],
+		mappings,
+	};
+	return `//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`;
+}
+
 /** @internal */
 export function makeResolveAndLoad(underlyingFileSystem: LoaderFileSystem) {
 	// Cache `package.json` reads
@@ -329,9 +350,21 @@ export function makeResolveAndLoad(underlyingFileSystem: LoaderFileSystem) {
 					throw new TypeError(`Import attribute '${key}' with value '${value}' is not supported`);
 				}
 
-				// Get transpiled source. JavaScript is also passed through esbuild in case downleveling
-				// is expected.
 				const content = fileSystem.readFileString(tsSourceUrl);
+
+				// Pass erasable files directly to nodejs
+				if (
+					tsConfig?.compilerOptions.erasableSyntaxOnly &&
+					testStrippable.test(tsSourceUrl.pathname)
+				) {
+					return {
+						format: "module-typescript",
+						shortCircuit: true,
+						source: `${content}\n${makeStripSourceMap(content, tsSourceUrl, urlString)}`,
+					};
+				}
+
+				// Otherwise transpile with esbuild.
 				const payload = transpileSource(content, format, tsSourceUrl, tsConfig?.compilerOptions ?? {});
 				return {
 					format,

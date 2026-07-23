@@ -1,6 +1,7 @@
 import type { LoaderFileSystem } from "#ts/utility/scope";
 import type { LoadFnOutput, LoadHookContext, ResolveFnOutput, ResolveHookContext } from "node:module";
 import * as assert from "node:assert/strict";
+import { stripTypeScriptTypes } from "node:module";
 import { SourceTextModule, createContext } from "node:vm";
 import { makeTestFileSystem } from "@loaderkit/resolve/adapter";
 import { resolveSync as esmResolve } from "@loaderkit/resolve/esm";
@@ -50,12 +51,18 @@ export function makeTestLoader(files: Record<string, string>) {
 		assert.ok(loadResult.shortCircuit);
 		return loadResult;
 	};
+	const loadEvaluableSource = (resolution: ResolveFnOutput) => {
+		const loadResult = load(resolution);
+		const source = loadResult.source as string;
+		return loadResult.format === "module-typescript"
+			? stripTypeScriptTypes(source, { mode: "strip" })
+			: source;
+	};
 	const evaluate = async (main: string) => {
 		const context = createContext();
 		const cache = new Map<string, SourceTextModule>();
 		const mainResolution = resolve(`file:///${main}`, undefined);
-		const sourceText = load(mainResolution);
-		const entry = new SourceTextModule(sourceText.source as string, {
+		const entry = new SourceTextModule(loadEvaluableSource(mainResolution), {
 			context,
 			identifier: mainResolution.url,
 			initializeImportMeta: meta => {
@@ -64,9 +71,7 @@ export function makeTestLoader(files: Record<string, string>) {
 		});
 		cache.set(mainResolution.url, entry);
 		const get = (resolution: ResolveFnOutput) => cache.get(resolution.url) ?? function() {
-			const loadResult = load(resolution);
-			// eslint-disable-next-line @typescript-eslint/no-base-to-string
-			const module = new SourceTextModule(String(loadResult.source), {
+			const module = new SourceTextModule(loadEvaluableSource(resolution), {
 				context,
 				identifier: resolution.url,
 				initializeImportMeta: meta => {
@@ -81,5 +86,5 @@ export function makeTestLoader(files: Record<string, string>) {
 		await entry.evaluate();
 		return context as Record<string, unknown>;
 	};
-	return { evaluate, resolve };
+	return { evaluate, load, resolve };
 }

@@ -1,11 +1,21 @@
 import type { TranspileOptions } from "./scope.js";
 import type { BuildFailure } from "esbuild";
 import type { ModuleFormat } from "node:module";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { transformSync } from "esbuild";
 import { testAnyTypeScript } from "./translate.js";
 
 const nodeVersion = `node${process.versions.node}`;
+
+const loadTransformSync = function() {
+	type TransformSync = typeof import("esbuild").transformSync;
+	let transform: TransformSync | undefined;
+	return () => transform ??= function() {
+		const require = createRequire(import.meta.url);
+		const esbuild = require("esbuild") as typeof import("esbuild");
+		return esbuild.transformSync;
+	}();
+}();
 
 function isBuildFailure(error: unknown): error is BuildFailure & Error {
 	return typeof error === "object" && error !== null && "errors" in error;
@@ -21,7 +31,7 @@ export function transpileSource(
 	try {
 		// nb: CommonJS is not actually supported. You would need a whole new thing that
 		// shims `require`, `__filename`, etc.
-		const result = transformSync(sourceText, {
+		const result = loadTransformSync()(sourceText, {
 			format: format === "module" ? "esm" : "cjs",
 			loader: function() {
 				const { pathname } = sourceLocation;

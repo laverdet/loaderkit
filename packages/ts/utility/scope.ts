@@ -25,7 +25,11 @@ interface TypeScriptConfig {
 	extends?: string;
 }
 
-interface CompilerOptions extends EmitOptions, TranspileOptions {}
+interface CompilerOptions extends EmitOptions, TranspileOptions {
+	// If `erasableSyntaxOnly` is on then we use the built-in nodejs TypeScript *loader*. In either case we use our
+	// *resolver*.
+	erasableSyntaxOnly?: boolean;
+}
 
 /** Options which affect the mapping of `.ts` files to virtual `.js` files */
 interface EmitOptions {

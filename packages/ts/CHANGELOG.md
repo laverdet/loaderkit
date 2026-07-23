@@ -1,5 +1,12 @@
 # @loaderkit/ts
 
+## 2.2.0
+
+### Minor Changes
+
+- 023256f: migrate from `module.register` to `module.registerHooks`
+- 8c932bb: delegate transpilation to nodejs' built-in type stripper when `erasableSyntaxOnly` is set
+
 ## 2.1.1
 
 ### Patch Changes

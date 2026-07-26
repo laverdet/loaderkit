@@ -1,5 +1,11 @@
 # @loaderkit/ts
 
+## 2.2.1
+
+### Patch Changes
+
+- 32890a6: fix dual package failure in bundler mode
+
 ## 2.2.0
 
 ### Minor Changes

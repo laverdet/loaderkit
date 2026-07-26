@@ -10,6 +10,7 @@ import { absoluteJavaScriptToTypeScript, absoluteTypeScriptToJavaScript, outputT
 
 const testHasScheme = /^[a-z][a-z0-9+.-]*:/i;
 const commonJsExtensions = [ ".js", ".jsx" ];
+const esmImportConditions = [ "node", "import" ];
 const commonJsImportConditions = [ "node", "import", "require" ];
 const commonJsRequireConditions = [ "node", "require" ];
 
@@ -144,13 +145,23 @@ export function makeResolveAndLoad(underlyingFileSystem: LoaderFileSystem) {
 				} else {
 					return cjsResolve(fileSystem, specifier, parentURL);
 				}
+			} else if (parentFormat === "module") {
+				// `{ "type": "module" }` without output uses bundler-like import semantics. First
+				// we try `import` then fallback to `require`.
+				try {
+					return cjsResolve(fileSystem, specifier, parentURL, {
+						conditions: esmImportConditions,
+						extensions: commonJsExtensions,
+					});
+				} catch {
+					return cjsResolve(fileSystem, specifier, parentURL, {
+						conditions: commonJsImportConditions,
+						extensions: commonJsExtensions,
+					});
+				}
 			} else {
-				// Projects without outputs fall back to CJS resolution with custom conditions &
-				// extensions. This simulates "bundler" like behavior.
 				return cjsResolve(fileSystem, specifier, parentURL, {
-					conditions: parentFormat === "module"
-						? commonJsImportConditions
-						: commonJsRequireConditions,
+					conditions: commonJsRequireConditions,
 					extensions: commonJsExtensions,
 				});
 			}

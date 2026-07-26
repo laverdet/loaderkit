@@ -265,6 +265,46 @@ await test("dual package release from cjs vs mjs", () => {
 	assert.strictEqual(result2.format, "module");
 });
 
+await test("dual package with require listed before import", () => {
+	const { resolve } = makeTestLoader({
+		"node_modules/mod/package.json": JSON.stringify({
+			name: "mod",
+			exports: {
+				".": {
+					require: "./dist/main.js",
+					import: "./dist/main.mjs",
+				},
+			},
+		}),
+		"node_modules/mod/dist/main.mjs": "",
+		"node_modules/mod/dist/main.js": "",
+	});
+	const result1 = resolve("mod", "file:///main.mjs");
+	assert.strictEqual(result1.url, "file:///node_modules/mod/dist/main.mjs");
+	assert.strictEqual(result1.format, "module");
+
+	const result2 = resolve("mod", "file:///main.js");
+	assert.strictEqual(result2.url, "file:///node_modules/mod/dist/main.js");
+	assert.strictEqual(result2.format, "commonjs");
+});
+
+await test("require-only package from esm parent", () => {
+	const { resolve } = makeTestLoader({
+		"node_modules/mod/package.json": JSON.stringify({
+			name: "mod",
+			exports: {
+				".": {
+					require: "./dist/main.js",
+				},
+			},
+		}),
+		"node_modules/mod/dist/main.js": "",
+	});
+	const result = resolve("mod", "file:///main.mjs");
+	assert.strictEqual(result.url, "file:///node_modules/mod/dist/main.js");
+	assert.strictEqual(result.format, "commonjs");
+});
+
 await test("type-only imports w/ rootDirs", async () => {
 	const { evaluate } = makeTestLoader({
 		"package.json": JSON.stringify({ type: "module" }),

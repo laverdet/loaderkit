@@ -2,6 +2,7 @@ import type { LoaderFileSystem, PackageJson, ResolutionConfig } from "./utility/
 import type { FileSystemSync } from "@loaderkit/resolve/fs";
 import type { LoadHookSync, ResolveHookSync } from "node:module";
 import type {} from "dynohot";
+import * as fs from "node:fs";
 import { resolveSync as cjsResolve } from "@loaderkit/resolve/cjs";
 import { resolveSync as esmResolve } from "@loaderkit/resolve/esm";
 import { transpileSource } from "./utility/esbuild.js";
@@ -173,9 +174,18 @@ export function makeResolveAndLoad(underlyingFileSystem: LoaderFileSystem) {
 		}
 		const { parentURL: parentUrlString } = context;
 		if (parentUrlString === undefined) {
-			// Program entrypoint. We can assume that `specifier` is a fully-resolved file URL with
-			// no query parameters. It could be either a source file or an output file.
+			// Program entrypoint. We can generally assume that `specifier` is a fully-resolved file
+			// URL with no query parameters. It could be either a source file or an output file.
 			const url = new URL(specifier);
+			// Actually, we can't assume it will exist. With the loader installed nodejs will pass
+			// us a bogus `file://` based on the current directory without looking for a file. In
+			// that case we just pass it along the loader chain so we're not to blame for the error
+			// that will probably bubble up.
+			try {
+				fs.accessSync(url, fs.constants.R_OK);
+			} catch {
+				return nextResolve(specifier, context);
+			}
 			const packageMeta = resolvePackage(fileSystem, url);
 			const tsConfig = resolveTypeScriptPackage(url, packageMeta?.packagePath);
 			const format = resolveFormat(specifier, packageMeta?.packageJson);
